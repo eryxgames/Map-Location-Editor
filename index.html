@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Map Location Editor</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0b0b0d; --s1:#111116; --s2:#17171e; --s3:#1e1e27;
+  --bd:#2c2c3a; --bd2:#3a3a50;
+  --tx:#e2e2ef; --tx2:#8888a2; --tx3:#50506a;
+  --acc:#5b6af0; --acc2:#7080ff;
+  --dan:#e05060; --ok:#50c080; --warn:#e0a050;
+  --r:4px; --r2:7px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font-family:'Syne',sans-serif;font-size:12px;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+
+/* ── Header ── */
+.hdr{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--s1);border-bottom:1px solid var(--bd);flex-shrink:0;z-index:20}
+.hdr-title{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;flex-shrink:0}
+.badge{font-family:'JetBrains Mono',monospace;font-size:9px;background:var(--s3);color:var(--tx3);padding:2px 8px;border-radius:99px;border:1px solid var(--bd);flex-shrink:0}
+.hdr-right{margin-left:auto;display:flex;gap:5px;align-items:center}
+.zoom-disp{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);min-width:44px;text-align:right}
+
+/* ── Layout ── */
+.layout{flex:1;display:flex;overflow:hidden}
+
+/* ── Sidebar ── */
+.sidebar{width:254px;flex-shrink:0;background:var(--s1);border-right:1px solid var(--bd);display:flex;flex-direction:column;overflow:hidden}
+.sec{padding:10px 12px;border-bottom:1px solid var(--bd);flex-shrink:0}
+.sec-lbl{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:6px 12px;border-radius:var(--r);font-family:'Syne',sans-serif;font-size:11px;font-weight:600;letter-spacing:.02em;cursor:pointer;border:1px solid transparent;transition:background .12s,border-color .12s,color .12s;white-space:nowrap;line-height:1}
+.btn:focus{outline:none}
+.btn-out{background:transparent;color:var(--tx2);border-color:var(--bd)}
+.btn-out:hover{background:var(--s3);color:var(--tx);border-color:var(--bd2)}
+.btn-gh{background:transparent;color:var(--tx3);border-color:transparent}
+.btn-gh:hover{background:var(--s3);color:var(--tx2)}
+.btn-dan{background:transparent;color:var(--dan);border-color:transparent}
+.btn-dan:hover{background:rgba(224,80,96,.1);border-color:var(--dan)}
+.btn-sm{padding:4px 9px;font-size:10px}
+.btn-xs{padding:3px 7px;font-size:10px}
+.btn-full{width:100%}
+
+/* Mode buttons */
+.mode-grp{display:flex;gap:3px}
+.mbtn{flex:1;padding:5px 5px;font-size:9px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;cursor:pointer;border:1px solid var(--bd);border-radius:var(--r);background:transparent;color:var(--tx3);transition:all .12s;text-align:center;font-family:'Syne',sans-serif}
+.mbtn:hover{background:var(--s3);color:var(--tx2)}
+.mbtn.ms{background:var(--s3);color:var(--tx);border-color:var(--bd2)}
+.mbtn.ma{background:rgba(91,106,240,.14);color:var(--acc);border-color:var(--acc)}
+.mbtn.mr{background:rgba(224,160,80,.12);color:var(--warn);border-color:var(--warn)}
+
+/* ── Inputs ── */
+.field{display:flex;flex-direction:column;gap:3px}
+.flbl{font-size:9px;letter-spacing:.08em;color:var(--tx3);font-family:'JetBrains Mono',monospace}
+input[type=number],input[type=text]{background:var(--s3);border:1px solid var(--bd);color:var(--tx);padding:5px 7px;border-radius:var(--r);font-family:'JetBrains Mono',monospace;font-size:11px;width:100%;transition:border-color .15s}
+input[type=number]:focus,input[type=text]:focus{outline:none;border-color:var(--acc)}
+input[type=number]::-webkit-inner-spin-button{opacity:.5}
+input[type=checkbox]{width:13px;height:13px;accent-color:var(--acc);cursor:pointer;flex-shrink:0}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
+.toggle{display:flex;align-items:center;gap:7px;padding:3px 0;cursor:pointer}
+.toggle label{font-size:11px;color:var(--tx2);cursor:pointer;user-select:none}
+.upload-row{display:flex;gap:5px;margin-bottom:4px}
+.upload-st{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 1px}
+.upload-st.ok{color:var(--ok)}
+
+/* ── Active Color Palette ── */
+.palette-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:7px}
+.pal-dot{
+  width:20px;height:20px;border-radius:50%;cursor:pointer;flex-shrink:0;
+  border:2px solid transparent;position:relative;
+  transition:transform .12s,border-color .12s,box-shadow .12s;
+}
+.pal-dot:hover{transform:scale(1.2)}
+.pal-dot.active{
+  border-color:#fff;
+  box-shadow:0 0 0 1px rgba(0,0,0,.7),0 0 7px 2px rgba(255,255,255,.2);
+}
+.pal-dot.active::after{
+  content:'✓';position:absolute;inset:0;display:flex;align-items:center;
+  justify-content:center;font-size:10px;font-weight:700;color:#fff;pointer-events:none;
+  text-shadow:0 1px 2px rgba(0,0,0,.9);
+}
+.pal-custom{
+  width:20px;height:20px;border-radius:50%;cursor:pointer;flex-shrink:0;position:relative;
+  border:2px solid var(--bd2);overflow:hidden;
+  background:conic-gradient(#ff6b6b 0deg,#ffd166 60deg,#6bcb77 120deg,#4d96ff 180deg,#c77dff 240deg,#ff6b6b 300deg);
+  transition:transform .12s,border-color .12s;
+}
+.pal-custom:hover{transform:scale(1.2);border-color:var(--tx2)}
+.pal-custom input[type=color]{opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer;border:none;padding:0}
+.active-bar{display:flex;align-items:center;gap:7px}
+.active-swatch{width:26px;height:13px;border-radius:3px;border:1px solid rgba(255,255,255,.2);flex-shrink:0;transition:background .12s}
+.active-lbl{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx2)}
+.active-tag{margin-left:auto;font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--tx3)}
+
+/* ── Points List ── */
+.pts-hdr{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;border-bottom:1px solid var(--bd);flex-shrink:0}
+.pts-scroll{flex:1;overflow-y:auto;overflow-x:hidden}
+.pts-scroll::-webkit-scrollbar{width:3px}
+.pts-scroll::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
+.pitem{display:flex;align-items:center;gap:5px;padding:5px 9px 5px 4px;border-bottom:1px solid transparent;cursor:default;transition:background .08s;user-select:none;position:relative}
+.pitem:hover{background:var(--s2)}
+.pitem.sel{background:rgba(91,106,240,.1)}
+.pitem.dragging{opacity:.3}
+.pitem.drag-over::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--acc);border-radius:1px}
+.dh{color:var(--tx3);cursor:grab;font-size:13px;flex-shrink:0;padding:2px;transition:color .12s;line-height:1}
+.dh:hover{color:var(--tx2)}
+.dh:active{cursor:grabbing}
+.pswatch{width:11px;height:11px;border-radius:50%;flex-shrink:0;cursor:pointer;border:1.5px solid rgba(255,255,255,.15);transition:transform .15s,border-color .15s}
+.pswatch:hover{transform:scale(1.3);border-color:rgba(255,255,255,.4)}
+.pname{flex:1;font-size:11px;font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--tx)}
+.pxy{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);white-space:nowrap}
+.pdel{opacity:0;color:var(--tx3);cursor:pointer;font-size:14px;line-height:1;flex-shrink:0;transition:opacity .1s,color .1s}
+.pitem:hover .pdel{opacity:1}
+.pdel:hover{color:var(--dan)}
+
+/* ── Canvas area ── */
+.canvas-area{flex:1;background:var(--bg);position:relative;overflow:hidden;cursor:default}
+canvas#mc{display:block;position:absolute;top:0;left:0;transform-origin:0 0}
+
+.mode-pill{
+  position:absolute;top:10px;left:10px;
+  font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  padding:3px 10px;border-radius:var(--r);border:1px solid;
+  backdrop-filter:blur(6px);pointer-events:none;
+  display:flex;align-items:center;gap:6px;z-index:5;
+}
+.mp-sel{background:rgba(11,11,13,.75);color:var(--tx2);border-color:var(--bd)}
+.mp-add{background:rgba(91,106,240,.14);color:var(--acc);border-color:var(--acc)}
+.mp-rect{background:rgba(224,160,80,.12);color:var(--warn);border-color:var(--warn)}
+.pill-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;border:1.5px solid rgba(255,255,255,.25)}
+
+.cinfo{
+  position:absolute;bottom:10px;left:10px;
+  font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);
+  background:rgba(11,11,13,.82);padding:3px 9px;border-radius:var(--r);
+  border:1px solid var(--bd);pointer-events:none;z-index:5;
+}
+.vp-hint{
+  position:absolute;bottom:10px;right:10px;
+  font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);
+  background:rgba(11,11,13,.7);padding:3px 9px;border-radius:var(--r);
+  border:1px solid var(--bd);pointer-events:none;z-index:5;line-height:1.7;
+}
+
+/* ── Right Panel ── */
+.rpanel{width:210px;flex-shrink:0;background:var(--s1);border-left:1px solid var(--bd);display:flex;flex-direction:column;overflow-y:auto}
+.rpanel::-webkit-scrollbar{width:3px}
+.rpanel::-webkit-scrollbar-thumb{background:var(--bd)}
+.no-sel{font-size:11px;color:var(--tx3);padding:4px 0}
+.cpresets{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.cpre{width:18px;height:18px;border-radius:50%;cursor:pointer;border:1.5px solid rgba(255,255,255,.1);transition:transform .12s,border-color .12s;flex-shrink:0}
+.cpre:hover{transform:scale(1.25);border-color:rgba(255,255,255,.45)}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0}
+.sk{font-size:9px;color:var(--tx3);font-family:'JetBrains Mono',monospace;letter-spacing:.08em}
+.sv{font-size:11px;color:var(--tx);font-family:'JetBrains Mono',monospace;font-weight:500}
+.rp-bot{margin-top:auto;border-top:1px solid var(--bd)}
+.rects-list{max-height:120px;overflow-y:auto}
+.rects-list::-webkit-scrollbar{width:3px}
+.rects-list::-webkit-scrollbar-thumb{background:var(--bd)}
+.ritem{display:flex;align-items:center;gap:6px;padding:4px 9px;cursor:pointer;transition:background .08s;border-bottom:1px solid var(--bd)}
+.ritem:hover{background:var(--s2)}
+.ritem.sel{background:rgba(224,160,80,.1)}
+.rname{flex:1;font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rdel{opacity:0;color:var(--tx3);cursor:pointer;font-size:13px;transition:opacity .1s,color .1s}
+.ritem:hover .rdel{opacity:1}
+.rdel:hover{color:var(--dan)}
+.note{font-size:10px;color:var(--tx3);line-height:1.5;padding:5px 0;font-family:'JetBrains Mono',monospace}
+.tag{display:inline-block;font-size:9px;font-family:'JetBrains Mono',monospace;background:var(--s3);color:var(--tx3);padding:1px 6px;border-radius:99px;border:1px solid var(--bd)}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <span class="hdr-title">Map Editor</span>
+  <span class="badge" id="pts-badge">0 pts</span>
+  <div class="mode-grp" style="margin-left:10px">
+    <button class="mbtn ms" id="mb-select" onclick="setMode('select')">▹ Select</button>
+    <button class="mbtn"    id="mb-add"    onclick="setMode('add')">+ Add</button>
+    <button class="mbtn"    id="mb-rect"   onclick="setMode('rect')">▭ Rect</button>
+  </div>
+  <div class="hdr-right">
+    <span class="zoom-disp" id="zoom-disp">100%</span>
+    <button class="btn btn-gh btn-sm" title="Fit to view  (or double-click canvas)" onclick="resetView()">⊡ Fit</button>
+    <button class="btn btn-out btn-sm" onclick="exportJSON()">Export JSON</button>
+    <button class="btn btn-gh  btn-sm" onclick="exportPNG()">Export PNG</button>
+  </div>
+</header>
+
+<div class="layout">
+
+<aside class="sidebar">
+
+  <div class="sec">
+    <div class="sec-lbl">Files</div>
+    <div class="upload-row">
+      <button class="btn btn-out btn-sm btn-full" onclick="triggerFile('ii')">🖼 Load Image</button>
+      <input type="file" id="ii" accept="image/*" style="display:none">
+    </div>
+    <div class="upload-st" id="img-st">No image loaded</div>
+    <div class="upload-row" style="margin-top:7px">
+      <button class="btn btn-out btn-sm btn-full" onclick="triggerFile('ji')">📄 Load JSON</button>
+      <input type="file" id="ji" accept=".json" style="display:none">
+    </div>
+    <div class="upload-st" id="json-st">No JSON loaded</div>
+    <div class="note" style="margin-top:5px">💡 Drag &amp; drop files onto the canvas.</div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-lbl">Canvas / Unity</div>
+    <div class="g2">
+      <div class="field"><span class="flbl">WIDTH</span>  <input type="number" id="cw" value="1920" oninput="onMeta()"></div>
+      <div class="field"><span class="flbl">HEIGHT</span> <input type="number" id="ch" value="1080" oninput="onMeta()"></div>
+    </div>
+    <div class="g2">
+      <div class="field"><span class="flbl">OFFSET X</span><input type="number" id="ox" value="0" oninput="onMeta()"></div>
+      <div class="field"><span class="flbl">OFFSET Y</span><input type="number" id="oy" value="0" oninput="onMeta()"></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-lbl">Calibration</div>
+    <label class="toggle"><input type="checkbox" id="invY" checked onchange="S.invertY=this.checked;render()"><label for="invY">Invert Y axis <span class="tag">Unity ↑+</span></label></label>
+    <label class="toggle"><input type="checkbox" id="invX"        onchange="S.invertX=this.checked;render()"><label for="invX">Invert X axis</label></label>
+    <label class="toggle"><input type="checkbox" id="showGrid" checked onchange="S.showGrid=this.checked;render()"><label for="showGrid">Show origin crosshair</label></label>
+    <label class="toggle"><input type="checkbox" id="showLbls" checked onchange="S.showLabels=this.checked;render()"><label for="showLbls">Show labels</label></label>
+    <div class="note" style="margin-top:4px">⚠ If points mirror vs Unity, toggle an axis checkbox.</div>
+  </div>
+
+  <!-- ── ACTIVE COLOR PALETTE ── -->
+  <div class="sec">
+    <div class="sec-lbl">Active Color — new points</div>
+    <div class="palette-row" id="palette-row"></div>
+    <div class="active-bar">
+      <div class="active-swatch" id="active-swatch"></div>
+      <span class="active-lbl" id="active-lbl">#ff6b6b</span>
+      <span class="active-tag">active</span>
+    </div>
+  </div>
+
+  <div class="pts-hdr">
+    <span class="sec-lbl" style="margin:0">Points <span style="color:var(--tx2)" id="pts-cnt">0</span></span>
+    <button class="btn btn-gh btn-xs" title="Add point at world origin with active color" onclick="addAtOrigin()">+ origin</button>
+  </div>
+
+  <div class="pts-scroll" id="pts-list"></div>
+</aside>
+
+<main class="canvas-area" id="ca">
+  <canvas id="mc"></canvas>
+  <div class="mode-pill mp-sel" id="mpill">
+    <span class="pill-dot" id="pill-dot" style="display:none"></span>
+    <span id="mpill-txt">SELECT</span>
+  </div>
+  <div class="cinfo" id="cinfo"></div>
+  <div class="vp-hint">
+    scroll = zoom &nbsp;·&nbsp; middle-drag = pan<br>
+    space+drag = pan &nbsp;·&nbsp; dbl-click = fit
+  </div>
+</main>
+
+<aside class="rpanel">
+  <div id="rp-content">
+    <div class="sec"><p class="no-sel">Click a point to select it, or drag in the list to reorder.</p></div>
+  </div>
+  <div class="sec" id="rect-sec" style="display:none">
+    <div class="sec-lbl">Rectangles <span style="color:var(--tx2)" id="rect-cnt">0</span></div>
+    <div class="rects-list" id="rects-list"></div>
+  </div>
+  <div class="rp-bot">
+    <div class="sec">
+      <div class="sec-lbl">Stats</div>
+      <div class="stat-row"><span class="sk">POINTS</span><span class="sv" id="st-pts">0</span></div>
+      <div class="stat-row"><span class="sk">RECTS</span> <span class="sv" id="st-rects">0</span></div>
+      <div class="stat-row"><span class="sk">CANVAS</span><span class="sv" id="st-canvas">—</span></div>
+      <div class="stat-row"><span class="sk">ZOOM</span>  <span class="sv" id="st-zoom">1.00×</span></div>
+    </div>
+  </div>
+</aside>
+</div>
+
+<input type="color" id="gcp" style="position:fixed;opacity:0;pointer-events:none;width:0;height:0">
+
+<script>
+// ══════════════════════════════════════════════════════
+// PALETTE DEFINITION
+// ══════════════════════════════════════════════════════
+const PALETTE = [
+  '#ff6b6b','#c77dff','#6bcb77','#4d96ff',
+  '#ff9a3c','#ffd166','#40c4ff','#e05252',
+  '#52c07a','#ffffff','#aaaaaa','#1a1a2e'
+];
+
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+const S = {
+  bg:null, bgName:'',
+  meta:{ canvasWidth:1920, canvasHeight:1080, offsetX:0, offsetY:0, origin:'center' },
+  locs:[], rects:[],
+  selLoc:-1, selRect:-1, hovLoc:-1,
+  mode:'select',
+  invertX:false, invertY:true,
+  showGrid:true, showLabels:true,
+  activeColor: PALETTE[0],
+  // Viewport: zoom + pan stored as CSS-pixel translation/scale
+  // (canvas is positioned with CSS transform: translate + scale)
+  vp:{ zoom:1, panX:0, panY:0 },
+  panning:false, panLast:null,
+  spaceDown:false,
+  rectDrawing:false, rectStart:null, rectCur:null,
+  listDragFrom:-1,
+  canvasDragPt:-1,
+};
+let canvas, ctx;
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+function init() {
+  canvas = document.getElementById('mc');
+  ctx    = canvas.getContext('2d');
+
+  // File inputs — value reset after each read so the same file re-triggers
+  const ii = document.getElementById('ii');
+  ii.onchange = e => { const f=e.target.files[0]; if(f) loadImg(f); ii.value=''; };
+  const ji = document.getElementById('ji');
+  ji.onchange = e => { const f=e.target.files[0]; if(f) loadJson(f); ji.value=''; };
+
+  // Drag-drop onto canvas area
+  const ca = document.getElementById('ca');
+  ca.addEventListener('dragover', e => e.preventDefault());
+  ca.addEventListener('drop', e => {
+    e.preventDefault();
+    for (const f of e.dataTransfer.files) {
+      if (f.type.startsWith('image/')||/\.(png|jpg|jpeg|webp|gif|bmp)$/i.test(f.name)) { loadImg(f); break; }
+      if (f.name.endsWith('.json')) { loadJson(f); break; }
+    }
+  });
+
+  // Mouse events — attached to canvas-area div so they work during panning too
+  ca.addEventListener('mousedown',  onMD);
+  ca.addEventListener('mousemove',  onMM);
+  ca.addEventListener('mouseup',    onMU);
+  ca.addEventListener('mouseleave', onML);
+  ca.addEventListener('wheel',      onWheel, { passive:false });
+  ca.addEventListener('dblclick',   () => resetView());
+  ca.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    if (S.hovLoc >= 0) deletePoint(S.hovLoc);
+  });
+
+  // Space key = temporary pan mode
+  window.addEventListener('keydown', e => {
+    if (e.code==='Space' && !e.repeat && document.activeElement.tagName!=='INPUT') {
+      e.preventDefault(); S.spaceDown=true; updateCursor();
+    }
+  });
+  window.addEventListener('keyup', e => {
+    if (e.code==='Space') { S.spaceDown=false; updateCursor(); }
+  });
+
+  buildPalette();
+  setCanvasSize();
+  fitView();
+  render();
+  updateList();
+  updateRP();
+}
+
+// ══════════════════════════════════════════════════════
+// PALETTE UI
+// ══════════════════════════════════════════════════════
+function buildPalette() {
+  const row = document.getElementById('palette-row');
+  row.innerHTML = '';
+  PALETTE.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'pal-dot' + (c===S.activeColor?' active':'');
+    d.style.background = c;
+    d.dataset.c = c;
+    d.title = c;
+    d.onclick = () => setActiveColor(c);
+    row.appendChild(d);
+  });
+  // Custom color button (rainbow wheel)
+  const wrap = document.createElement('div');
+  wrap.className = 'pal-custom';
+  wrap.title = 'Custom color…';
+  const inp = document.createElement('input');
+  inp.type = 'color';
+  inp.id = 'pal-custom-inp';
+  inp.value = S.activeColor;
+  inp.oninput = e => setActiveColor(e.target.value, true);
+  wrap.appendChild(inp);
+  row.appendChild(wrap);
+  syncActiveSwatch();
+}
+
+function setActiveColor(c, isCustom=false) {
+  S.activeColor = c;
+  // Update dot selection rings
+  document.querySelectorAll('#palette-row .pal-dot').forEach(d => {
+    d.classList.toggle('active', d.dataset.c===c);
+  });
+  if (!isCustom) {
+    const ci = document.getElementById('pal-custom-inp');
+    if (ci) ci.value = c;
+  }
+  syncActiveSwatch();
+  updateModePill();
+}
+
+function syncActiveSwatch() {
+  document.getElementById('active-swatch').style.background = S.activeColor;
+  document.getElementById('active-lbl').textContent = S.activeColor;
+}
+
+// ══════════════════════════════════════════════════════
+// CANVAS SIZING
+// ══════════════════════════════════════════════════════
+function setCanvasSize() {
+  canvas.width  = S.meta.canvasWidth;
+  canvas.height = S.meta.canvasHeight;
+  canvas.style.width  = S.meta.canvasWidth  + 'px';
+  canvas.style.height = S.meta.canvasHeight + 'px';
+  document.getElementById('st-canvas').textContent = `${S.meta.canvasWidth}×${S.meta.canvasHeight}`;
+}
+
+// Fit canvas into the visible container
+function fitView() {
+  const ca  = document.getElementById('ca');
+  const pad = 24;
+  const zoom = Math.min(
+    (ca.clientWidth  - pad*2) / S.meta.canvasWidth,
+    (ca.clientHeight - pad*2) / S.meta.canvasHeight,
+    1
+  );
+  S.vp.zoom = zoom;
+  S.vp.panX = (ca.clientWidth  - S.meta.canvasWidth  * zoom) / 2;
+  S.vp.panY = (ca.clientHeight - S.meta.canvasHeight * zoom) / 2;
+  applyVP(); updateZoomUI();
+}
+
+function resetView() { fitView(); render(); }
+
+// Apply viewport as CSS transform on the canvas element
+function applyVP() {
+  canvas.style.transform = `translate(${S.vp.panX}px,${S.vp.panY}px) scale(${S.vp.zoom})`;
+}
+
+function updateZoomUI() {
+  const pct = Math.round(S.vp.zoom*100)+'%';
+  document.getElementById('zoom-disp').textContent = pct;
+  document.getElementById('st-zoom').textContent   = S.vp.zoom.toFixed(2)+'×';
+}
+
+// ══════════════════════════════════════════════════════
+// COORDINATE CONVERSION
+//
+// w2c / c2w work in CANVAS PIXEL SPACE (0..W, 0..H).
+// mpos() converts a mouse event (in canvas-area CSS px) → canvas pixel,
+//   accounting for the CSS zoom+pan transform.
+//
+// Unity convention: center-origin, Y-up.
+// Screen convention: top-left origin, Y-down.
+// invertY=true (default) flips Y to match Unity's world space.
+// If your map uses a different coordinate system, toggle the checkboxes.
+// ══════════════════════════════════════════════════════
+function w2c(wx, wy) {
+  const { canvasWidth:cw, canvasHeight:ch, offsetX:ox, offsetY:oy } = S.meta;
+  return {
+    x: cw/2 + ox + (S.invertX ? -wx :  wx),
+    y: ch/2 + oy + (S.invertY ? -wy :  wy)
+  };
+}
+function c2w(cx, cy) {
+  const { canvasWidth:cw, canvasHeight:ch, offsetX:ox, offsetY:oy } = S.meta;
+  const dx = cx - (cw/2+ox);
+  const dy = cy - (ch/2+oy);
+  return { x: S.invertX?-dx:dx, y: S.invertY?-dy:dy };
+}
+
+// CSS mouse position (relative to canvas-area) → canvas pixel
+function mpos(e) {
+  const ca = document.getElementById('ca');
+  const r  = ca.getBoundingClientRect();
+  const cssX = e.clientX - r.left;
+  const cssY = e.clientY - r.top;
+  return {
+    x: (cssX - S.vp.panX) / S.vp.zoom,
+    y: (cssY - S.vp.panY) / S.vp.zoom,
+    cssX, cssY  // kept for zoom math
+  };
+}
+
+// ══════════════════════════════════════════════════════
+// RENDERING
+// ══════════════════════════════════════════════════════
+function render() {
+  const { canvasWidth:cw, canvasHeight:ch, offsetX:ox, offsetY:oy } = S.meta;
+  ctx.clearRect(0,0,cw,ch);
+
+  if (S.bg) {
+    ctx.drawImage(S.bg,0,0,cw,ch);
+  } else {
+    ctx.fillStyle='#0d0d11'; ctx.fillRect(0,0,cw,ch);
+    ctx.textAlign='center';
+    ctx.fillStyle='#22223a'; ctx.font='bold 30px Syne,sans-serif';
+    ctx.fillText('Load a background image',cw/2,ch/2-10);
+    ctx.fillStyle='#2e2e50'; ctx.font='16px Syne,sans-serif';
+    ctx.fillText('Use the sidebar or drag & drop',cw/2,ch/2+28);
+  }
+
+  // Origin crosshair
+  if (S.showGrid) {
+    const cx=cw/2+ox, cy=ch/2+oy;
+    ctx.save();
+    ctx.strokeStyle='rgba(91,106,240,.38)'; ctx.lineWidth=1;
+    ctx.setLineDash([5,12]);
+    ctx.beginPath(); ctx.moveTo(cx,0); ctx.lineTo(cx,ch); ctx.moveTo(0,cy); ctx.lineTo(cw,cy); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='rgba(91,106,240,.9)';
+    ctx.beginPath(); ctx.arc(cx,cy,4,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='rgba(91,106,240,.6)';
+    ctx.font='10px "JetBrains Mono",monospace'; ctx.textAlign='left';
+    ctx.fillText('origin (0,0)',cx+7,cy-5);
+    ctx.restore();
+  }
+
+  S.rects.forEach((r,i) => drawRect(r,i===S.selRect));
+  if (S.rectDrawing&&S.rectStart&&S.rectCur) drawRectProg(S.rectStart,S.rectCur);
+
+  // non-selected points first, selected on top
+  S.locs.forEach((loc,i) => { if(i!==S.selLoc) drawPt(loc,i); });
+  if (S.selLoc>=0&&S.selLoc<S.locs.length) drawPt(S.locs[S.selLoc],S.selLoc);
+
+  // Sync counters
+  const n=S.locs.length;
+  document.getElementById('pts-badge').textContent=`${n} pts`;
+  document.getElementById('pts-cnt').textContent=n;
+  document.getElementById('st-pts').textContent=n;
+  document.getElementById('st-rects').textContent=S.rects.length;
+  const rs=document.getElementById('rect-sec');
+  rs.style.display=S.rects.length?'':'none';
+  document.getElementById('rect-cnt').textContent=S.rects.length;
+}
+
+function drawPt(loc,idx) {
+  const p=w2c(loc.x,loc.y);
+  const sel=idx===S.selLoc, hov=idx===S.hovLoc&&!sel;
+  const r=sel?9:hov?8:6;
+  if (sel) {
+    const g=ctx.createRadialGradient(p.x,p.y,r,p.x,p.y,r*4.5);
+    g.addColorStop(0,loc.color+'55'); g.addColorStop(1,'transparent');
+    ctx.beginPath(); ctx.arc(p.x,p.y,r*4.5,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
+  }
+  ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
+  ctx.fillStyle=loc.color; ctx.fill();
+  ctx.beginPath(); ctx.arc(p.x,p.y,r+1.5,0,Math.PI*2);
+  ctx.strokeStyle=sel?'#fff':'rgba(255,255,255,.3)';
+  ctx.lineWidth=sel?2:1; ctx.stroke();
+  if (S.showLabels) {
+    ctx.font=`${sel?'bold ':''} 11px "JetBrains Mono",monospace`;
+    ctx.textAlign='center';
+    const tw=ctx.measureText(loc.name).width, ly=p.y-r-5;
+    ctx.fillStyle='rgba(11,11,13,.88)';
+    rrect(ctx,p.x-tw/2-4,ly-13,tw+8,14,3); ctx.fill();
+    ctx.fillStyle=sel?'#fff':'rgba(226,226,239,.88)';
+    ctx.fillText(loc.name,p.x,ly-1);
+  }
+}
+
+function drawRect(r,sel) {
+  const p1=w2c(r.x1,r.y1),p2=w2c(r.x2,r.y2);
+  const rx=Math.min(p1.x,p2.x),ry=Math.min(p1.y,p2.y);
+  const rw=Math.abs(p2.x-p1.x),rh=Math.abs(p2.y-p1.y);
+  const col=r.color||'#e0a050';
+  ctx.save();
+  if(!sel) ctx.setLineDash([7,3]);
+  ctx.strokeStyle=col; ctx.lineWidth=sel?2:1.5;
+  ctx.strokeRect(rx,ry,rw,rh); ctx.setLineDash([]);
+  ctx.fillStyle=col+'15'; ctx.fillRect(rx,ry,rw,rh);
+  if (r.name) {
+    ctx.font='10px "JetBrains Mono",monospace'; ctx.textAlign='left';
+    const tw=ctx.measureText(r.name).width;
+    ctx.fillStyle='rgba(11,11,13,.82)'; ctx.fillRect(rx+2,ry+2,tw+8,15);
+    ctx.fillStyle=col; ctx.fillText(r.name,rx+6,ry+13);
+  }
+  ctx.restore();
+}
+
+function drawRectProg(s,c) {
+  const rx=Math.min(s.x,c.x),ry=Math.min(s.y,c.y);
+  const rw=Math.abs(c.x-s.x),rh=Math.abs(c.y-s.y);
+  ctx.save();
+  ctx.strokeStyle='#e0a050'; ctx.lineWidth=1.5;
+  ctx.setLineDash([7,3]); ctx.strokeRect(rx,ry,rw,rh); ctx.setLineDash([]);
+  ctx.fillStyle='rgba(224,160,80,.07)'; ctx.fillRect(rx,ry,rw,rh);
+  const w1=c2w(rx,ry),w2=c2w(rx+rw,ry+rh);
+  const txt=`(${Math.round(w1.x)},${Math.round(w1.y)})→(${Math.round(w2.x)},${Math.round(w2.y)})  ${Math.round(rw)}×${Math.round(rh)}`;
+  const ty=ry>18?ry-4:ry+rh+14;
+  ctx.font='10px "JetBrains Mono",monospace'; ctx.textAlign='left';
+  ctx.fillStyle='rgba(11,11,13,.8)'; ctx.fillRect(rx,ty-11,ctx.measureText(txt).width+8,14);
+  ctx.fillStyle='#e0a050'; ctx.fillText(txt,rx+4,ty);
+  ctx.restore();
+}
+
+function rrect(ctx,x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+}
+
+// ══════════════════════════════════════════════════════
+// CANVAS INTERACTION
+// ══════════════════════════════════════════════════════
+function isPanTrigger(e) {
+  return e.button===1 || (e.button===0 && S.spaceDown);
+}
+
+function onMD(e) {
+  if (isPanTrigger(e)) {
+    e.preventDefault();
+    S.panning=true;
+    S.panLast={ x:e.clientX, y:e.clientY };
+    document.getElementById('ca').style.cursor='grabbing';
+    return;
+  }
+  if (e.button!==0) return;
+  const p=mpos(e);
+
+  if (S.mode==='select') {
+    const idx=ptAt(p);
+    S.selLoc=idx;
+    if (idx>=0) S.canvasDragPt=idx;
+    updateList(); updateRP(); render();
+
+  } else if (S.mode==='add') {
+    const w=c2w(p.x,p.y);
+    S.locs.push({ name:nextName(), x:Math.round(w.x), y:Math.round(w.y), color:S.activeColor, marker:'circle' });
+    S.selLoc=S.locs.length-1;
+    updateList(); updateRP(); render();
+
+  } else if (S.mode==='rect') {
+    S.rectDrawing=true;
+    S.rectStart={ x:p.x, y:p.y };
+    S.rectCur  ={ x:p.x, y:p.y };
+  }
+}
+
+function onMM(e) {
+  // Pan
+  if (S.panning) {
+    S.vp.panX += e.clientX - S.panLast.x;
+    S.vp.panY += e.clientY - S.panLast.y;
+    S.panLast={ x:e.clientX, y:e.clientY };
+    applyVP(); updateZoomUI();
+    return;
+  }
+
+  const p=mpos(e);
+  const w=c2w(p.x,p.y);
+  document.getElementById('cinfo').textContent =
+    `Canvas ${Math.round(p.x)}, ${Math.round(p.y)}   │   World ${Math.round(w.x)}, ${Math.round(w.y)}`;
+
+  // Drag point on canvas
+  if (S.mode==='select' && S.canvasDragPt>=0) {
+    const wd=c2w(p.x,p.y);
+    S.locs[S.canvasDragPt].x=Math.round(wd.x);
+    S.locs[S.canvasDragPt].y=Math.round(wd.y);
+    syncListCoord(S.canvasDragPt);
+    if (S.selLoc===S.canvasDragPt) updateRP();
+    render(); return;
+  }
+
+  // Rect in progress
+  if (S.mode==='rect'&&S.rectDrawing) {
+    S.rectCur={ x:p.x, y:p.y }; render(); return;
+  }
+
+  // Hover
+  const idx=ptAt(p);
+  if (idx!==S.hovLoc) { S.hovLoc=idx; updateCursor(); render(); }
+}
+
+function onMU(e) {
+  if (S.panning) {
+    S.panning=false; S.panLast=null;
+    updateCursor(); return;
+  }
+  S.canvasDragPt=-1;
+
+  if (S.mode==='rect'&&S.rectDrawing&&S.rectStart&&S.rectCur) {
+    const dx=Math.abs(S.rectCur.x-S.rectStart.x);
+    const dy=Math.abs(S.rectCur.y-S.rectStart.y);
+    if (dx>5||dy>5) {
+      const w1=c2w(S.rectStart.x,S.rectStart.y);
+      const w2=c2w(S.rectCur.x,S.rectCur.y);
+      S.rects.push({ name:`rect_${S.rects.length+1}`, x1:Math.round(w1.x), y1:Math.round(w1.y), x2:Math.round(w2.x), y2:Math.round(w2.y), color:'#e0a050' });
+      S.selRect=S.rects.length-1;
+      updateRP(); updateRectList();
+    }
+    S.rectDrawing=false; S.rectStart=null; S.rectCur=null;
+    render();
+  }
+}
+
+function onML() {
+  if (S.panning) return;  // keep panning even if cursor briefly leaves
+  S.hovLoc=-1; S.canvasDragPt=-1;
+  document.getElementById('cinfo').textContent='';
+  render();
+}
+
+// Scroll-wheel zoom, centred on the cursor
+function onWheel(e) {
+  e.preventDefault();
+  const factor = e.deltaY<0 ? 1.1 : 1/1.1;
+  const ca=document.getElementById('ca');
+  const r=ca.getBoundingClientRect();
+  const cx=e.clientX-r.left;
+  const cy=e.clientY-r.top;
+  S.vp.panX = cx - (cx - S.vp.panX)*factor;
+  S.vp.panY = cy - (cy - S.vp.panY)*factor;
+  S.vp.zoom = Math.max(0.04, Math.min(50, S.vp.zoom*factor));
+  applyVP(); updateZoomUI();
+}
+
+function ptAt(p) {
+  const HIT=14;
+  for (let i=S.locs.length-1; i>=0; i--) {
+    const c=w2c(S.locs[i].x,S.locs[i].y);
+    if (Math.hypot(p.x-c.x,p.y-c.y)<=HIT) return i;
+  }
+  return -1;
+}
+
+function updateCursor() {
+  const ca=document.getElementById('ca');
+  if (S.spaceDown||S.panning) { ca.style.cursor=S.panning?'grabbing':'grab'; return; }
+  if (S.mode!=='select') { ca.style.cursor='crosshair'; return; }
+  ca.style.cursor=S.hovLoc>=0?'pointer':'default';
+}
+
+// ══════════════════════════════════════════════════════
+// FILE LOADING
+// ══════════════════════════════════════════════════════
+function triggerFile(id) {
+  // Clone input to guarantee fresh onChange even if same file re-selected
+  const old=document.getElementById(id);
+  const clone=old.cloneNode(true);
+  old.parentNode.replaceChild(clone,old);
+  if (id==='ii') clone.onchange=e=>{ const f=e.target.files[0]; if(f) loadImg(f); clone.value=''; };
+  else           clone.onchange=e=>{ const f=e.target.files[0]; if(f) loadJson(f); clone.value=''; };
+  clone.click();
+}
+
+function loadImg(file) {
+  const url=URL.createObjectURL(file);
+  const img=new Image();
+  img.onload=()=>{
+    S.bg=img; S.bgName=file.name;
+    const st=document.getElementById('img-st');
+    st.textContent=file.name; st.className='upload-st ok';
+    URL.revokeObjectURL(url); render();
+  };
+  img.onerror=()=>{ alert('Failed to load image.'); URL.revokeObjectURL(url); };
+  img.src=url;
+}
+
+function loadJson(file) {
+  const r=new FileReader();
+  r.onload=e=>{
+    try {
+      const d=JSON.parse(e.target.result);
+      if (d.meta) {
+        Object.assign(S.meta,d.meta);
+        document.getElementById('cw').value=S.meta.canvasWidth;
+        document.getElementById('ch').value=S.meta.canvasHeight;
+        document.getElementById('ox').value=S.meta.offsetX;
+        document.getElementById('oy').value=S.meta.offsetY;
+        setCanvasSize(); fitView();
+      }
+      if (Array.isArray(d.locations)) S.locs=d.locations;
+      if (Array.isArray(d.rects))     S.rects=d.rects;
+      const st=document.getElementById('json-st');
+      st.textContent=`${file.name} · ${S.locs.length} pts`; st.className='upload-st ok';
+      S.selLoc=-1;
+      updateList(); updateRectList(); updateRP(); render();
+    } catch(err) { alert('Invalid JSON: '+err.message); }
+  };
+  r.readAsText(file);
+}
+
+// ══════════════════════════════════════════════════════
+// META
+// ══════════════════════════════════════════════════════
+function onMeta() {
+  S.meta.canvasWidth  = parseInt(document.getElementById('cw').value)   ||1920;
+  S.meta.canvasHeight = parseInt(document.getElementById('ch').value)   ||1080;
+  S.meta.offsetX      = parseFloat(document.getElementById('ox').value) ||0;
+  S.meta.offsetY      = parseFloat(document.getElementById('oy').value) ||0;
+  setCanvasSize(); fitView(); render();
+}
+
+// ══════════════════════════════════════════════════════
+// MODE
+// ══════════════════════════════════════════════════════
+function setMode(m) {
+  S.mode=m;
+  ['select','add','rect'].forEach(id=>{
+    document.getElementById(`mb-${id}`).className=`mbtn${m===id?' m'+id[0]:''}`;
+  });
+  document.getElementById('mpill').className=`mode-pill mp-${m}`;
+  updateModePill(); updateCursor();
+}
+
+function updateModePill() {
+  const dot=document.getElementById('pill-dot');
+  const txt=document.getElementById('mpill-txt');
+  if (S.mode==='add') {
+    dot.style.display='block';
+    dot.style.background=S.activeColor;
+    txt.textContent='ADD';
+  } else {
+    dot.style.display='none';
+    txt.textContent=S.mode.toUpperCase();
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// POINTS LIST
+// ══════════════════════════════════════════════════════
+function updateList() {
+  const list=document.getElementById('pts-list');
+  list.innerHTML='';
+  S.locs.forEach((loc,i)=>{
+    const el=document.createElement('div');
+    el.className=`pitem${i===S.selLoc?' sel':''}`;
+    el.draggable=true;
+    el.innerHTML=`
+      <span class="dh">⠿</span>
+      <span class="pswatch" style="background:${loc.color}" title="Change color"></span>
+      <span class="pname">${escHtml(loc.name)}</span>
+      <span class="pxy">${Math.round(loc.x)},${Math.round(loc.y)}</span>
+      <span class="pdel" title="Delete">×</span>`;
+    el.querySelector('.pswatch').onclick=e=>{ e.stopPropagation(); openColorFor(i,el.querySelector('.pswatch')); };
+    el.querySelector('.pdel').onclick=e=>{ e.stopPropagation(); deletePoint(i); };
+    el.onclick=e=>{
+      if (e.target.classList.contains('pdel')) return;
+      S.selLoc=i; updateList(); updateRP(); render();
+    };
+    el.ondragstart=e=>{ S.listDragFrom=i; el.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; };
+    el.ondragend=()=>{ el.classList.remove('dragging'); list.querySelectorAll('.pitem').forEach(x=>x.classList.remove('drag-over')); };
+    el.ondragover=e=>{ e.preventDefault(); list.querySelectorAll('.pitem').forEach(x=>x.classList.remove('drag-over')); el.classList.add('drag-over'); };
+    el.ondrop=e=>{
+      e.preventDefault();
+      const from=S.listDragFrom,to=i;
+      list.querySelectorAll('.pitem').forEach(x=>x.classList.remove('drag-over'));
+      if (from<0||from===to) return;
+      const moved=S.locs.splice(from,1)[0]; S.locs.splice(to,0,moved);
+      if (S.selLoc===from) S.selLoc=to;
+      else if (S.selLoc>from&&S.selLoc<=to) S.selLoc--;
+      else if (S.selLoc<from&&S.selLoc>=to) S.selLoc++;
+      updateList(); updateRP(); render();
+    };
+    list.appendChild(el);
+  });
+}
+
+function syncListCoord(idx) {
+  const items=document.querySelectorAll('.pitem');
+  if (!items[idx]) return;
+  const xy=items[idx].querySelector('.pxy');
+  if (xy) xy.textContent=`${Math.round(S.locs[idx].x)},${Math.round(S.locs[idx].y)}`;
+}
+
+function openColorFor(idx,swatchEl) {
+  const gcp=document.getElementById('gcp');
+  gcp.value=S.locs[idx].color;
+  gcp.oninput=e=>{
+    const c=e.target.value;
+    S.locs[idx].color=c;
+    if(swatchEl) swatchEl.style.background=c;
+    if(S.selLoc===idx){
+      const s2=document.getElementById('rp-swatch'); if(s2) s2.style.background=c;
+      const cp=document.getElementById('rp-cp'); if(cp) cp.value=c;
+    }
+    render();
+  };
+  gcp.onchange=()=>updateList();
+  gcp.click();
+}
+
+function deletePoint(idx) {
+  S.locs.splice(idx,1);
+  if (S.selLoc>=S.locs.length) S.selLoc=S.locs.length-1;
+  updateList(); updateRP(); render();
+}
+
+function addAtOrigin() {
+  S.locs.push({ name:nextName(), x:0, y:0, color:S.activeColor, marker:'circle' });
+  S.selLoc=S.locs.length-1;
+  updateList(); updateRP(); render();
+}
+
+// ══════════════════════════════════════════════════════
+// RIGHT PANEL
+// ══════════════════════════════════════════════════════
+function updateRP() {
+  const rp=document.getElementById('rp-content');
+  if (S.selLoc<0||S.selLoc>=S.locs.length) {
+    rp.innerHTML=`<div class="sec"><p class="no-sel">Click a point to select it, or drag in the list to reorder.</p></div>`;
+    return;
+  }
+  const loc=S.locs[S.selLoc];
+  const sp=w2c(loc.x,loc.y);
+  rp.innerHTML=`
+    <div class="sec">
+      <div class="sec-lbl">Point #${S.selLoc}</div>
+      <div class="field" style="margin-bottom:7px">
+        <span class="flbl">NAME</span>
+        <input type="text" id="rp-name" value="${escHtml(loc.name)}">
+      </div>
+      <div class="g2">
+        <div class="field"><span class="flbl">WORLD X</span><input type="number" id="rp-x" value="${loc.x}" step="1"></div>
+        <div class="field"><span class="flbl">WORLD Y</span><input type="number" id="rp-y" value="${loc.y}" step="1"></div>
+      </div>
+      <div class="field" style="margin-bottom:6px">
+        <span class="flbl">COLOR</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <div id="rp-swatch" style="width:22px;height:22px;border-radius:4px;background:${loc.color};border:1px solid rgba(255,255,255,.2);cursor:pointer;flex-shrink:0"></div>
+          <input type="color" id="rp-cp" value="${loc.color}" style="flex:1;height:27px;background:var(--s3);border:1px solid var(--bd);border-radius:var(--r);padding:2px 3px;cursor:pointer">
+        </div>
+      </div>
+      <div class="cpresets">
+        ${PALETTE.map(c=>`<div class="cpre" style="background:${c}" data-c="${c}" title="${c}"></div>`).join('')}
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-lbl">Screen Coords</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx2);line-height:1.8">
+        Canvas X: <span style="color:var(--tx)">${Math.round(sp.x)}</span><br>
+        Canvas Y: <span style="color:var(--tx)">${Math.round(sp.y)}</span>
+      </div>
+    </div>
+    <div class="sec">
+      <button class="btn btn-dan btn-sm btn-full" onclick="deletePoint(${S.selLoc})">Delete Point</button>
+    </div>`;
+
+  document.getElementById('rp-name').oninput=e=>{ S.locs[S.selLoc].name=e.target.value; updateList(); render(); };
+  document.getElementById('rp-x').onchange=e=>{ S.locs[S.selLoc].x=parseFloat(e.target.value)||0; syncListCoord(S.selLoc); updateRP(); render(); };
+  document.getElementById('rp-y').onchange=e=>{ S.locs[S.selLoc].y=parseFloat(e.target.value)||0; syncListCoord(S.selLoc); updateRP(); render(); };
+  const cp=document.getElementById('rp-cp');
+  const sw=document.getElementById('rp-swatch');
+  cp.oninput=e=>{ S.locs[S.selLoc].color=e.target.value; sw.style.background=e.target.value; updateList(); render(); };
+  sw.onclick=()=>cp.click();
+  rp.querySelectorAll('.cpre').forEach(el=>{
+    el.onclick=()=>{ const c=el.dataset.c; S.locs[S.selLoc].color=c; cp.value=c; sw.style.background=c; updateList(); render(); };
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// RECT LIST
+// ══════════════════════════════════════════════════════
+function updateRectList() {
+  const rl=document.getElementById('rects-list');
+  rl.innerHTML='';
+  S.rects.forEach((r,i)=>{
+    const el=document.createElement('div');
+    el.className=`ritem${i===S.selRect?' sel':''}`;
+    el.innerHTML=`<span style="width:8px;height:8px;border-radius:2px;background:${r.color||'#e0a050'};flex-shrink:0;display:inline-block;border:1px solid rgba(255,255,255,.2)"></span><span class="rname">${escHtml(r.name)}</span><span class="rdel">×</span>`;
+    el.onclick=e=>{ if(e.target.classList.contains('rdel'))return; S.selRect=i; render(); updateRectList(); };
+    el.querySelector('.rdel').onclick=e=>{ e.stopPropagation(); S.rects.splice(i,1); if(S.selRect>=S.rects.length)S.selRect=S.rects.length-1; updateRectList(); render(); };
+    rl.appendChild(el);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════════════════════
+function exportJSON() {
+  const data={ meta:S.meta, locations:S.locs };
+  if (S.rects.length) data.rects=S.rects;
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:'map_locations.json'});
+  a.click(); URL.revokeObjectURL(a.href);
+}
+
+function exportPNG() {
+  const a=Object.assign(document.createElement('a'),{href:canvas.toDataURL('image/png'),download:'map_preview.png'});
+  a.click();
+}
+
+// ══════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════
+function nextName() { return `loc_${S.locs.length+1}`; }
+function escHtml(s) { return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
