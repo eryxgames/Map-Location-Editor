@@ -13,7 +13,7 @@
 
 ## Motivation
 
-This tool was created as a development utility for **Eryxian** — a universe of campaign-driven games at [www.eryxian.com](https://www.eryxian.com). During development, there was a practical need to visually place, name, and fine-tune hundreds of location points directly on top of in-game map artwork, then export them as structured JSON that Unity could read at runtime.
+This tool was created as a development utility for **Eryxian** — campaign-driven scenarios for games at [www.eryxian.com](https://www.eryxian.com). During development, there was a practical need to visually place, name, and fine-tune hundreds of location points directly on top of in-game map artwork, then export them as structured JSON that Unity could read at runtime.
 
 Most general-purpose map tools are either too heavy, too generic, or export formats that don't map cleanly to Unity's world-space coordinate system. This editor stays focused: load your map image, drop your points, calibrate the coordinate axes to match your Unity scene, and export. That's it.
 
