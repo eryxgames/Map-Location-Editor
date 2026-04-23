@@ -1,14 +1,9 @@
 # Map Location Editor
 
-<!-- Repository Link Badge -->
-[![Code](https://shields.io)](https://github.com/eryxgames/Map-Location-Editor)
-
-<!-- Website Badge -->
-[![Website](https://shields.io)](https://eryxian.com)
-
-<!-- License Badge -->
-[![License: MIT](https://shields.io)](https://github.com)
-
+[![Code](https://img.shields.io/badge/GitHub-Map--Location--Editor-blue?logo=github)](https://github.com/eryxgames/Map-Location-Editor)
+[![Website](https://img.shields.io/badge/website-eryxian.com-orange)](https://eryxian.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Last commit](https://img.shields.io/github/last-commit/eryxgames/Map-Location-Editor)](https://github.com/eryxgames/Map-Location-Editor)
 
 > A browser-based utility for placing, managing, and exporting named location points on campaign maps — built for **[Eryxian](https://www.eryxian.com)** games and useful for any 2D project in Unity or similar platforms.
 
